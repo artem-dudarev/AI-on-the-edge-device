@@ -112,4 +112,9 @@ int clipInt(int input, int high, int low);
 bool numericStrToBool(std::string input);
 bool stringToBoolean(std::string input);
 
+// JSON helper functions
+void addJsonString(std::string& json, const std::string& key, const std::string& value, bool first = false);
+void addJsonNumber(std::string& json, const std::string& key, int value);
+std::string escapeJsonString(const std::string& str);
+
 #endif //HELPER_H

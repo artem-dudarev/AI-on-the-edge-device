@@ -1380,3 +1380,39 @@ bool stringToBoolean(std::string input)
 {
 	return (input == "TRUE");
 }
+
+// JSON helper functions
+void addJsonString(std::string& json, const std::string& key, const std::string& value, bool first)
+{
+    if (!first)
+    {
+        json += ",";
+    }
+    json += "\"" + key + "\":\"" + escapeJsonString(value) + "\"";
+}
+
+void addJsonNumber(std::string& json, const std::string& key, int value)
+{
+    json += ",\"" + key + "\":" + std::to_string(value);
+}
+
+std::string escapeJsonString(const std::string& str)
+{
+    std::string escaped;
+    for (size_t i = 0; i < str.length(); ++i)
+    {
+        if (str[i] == '\"')
+            escaped += "\\\"";
+        else if (str[i] == '\n')
+            escaped += "\\n";
+        else if (str[i] == '\r')
+            escaped += "\\r";
+        else if (str[i] == '\t')
+            escaped += "\\t";
+        else if (str[i] == '\\')
+            escaped += "\\\\";
+        else
+            escaped += str[i];
+    }
+    return escaped;
+}

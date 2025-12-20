@@ -259,7 +259,7 @@ esp_err_t setCFstatusToCam(void)
         // s->set_contrast(s, CFstatus.ImageContrast);     // -2 to 2
         // s->set_brightness(s, CFstatus.ImageBrightness); // -2 to 2
         Camera.SetCamContrastBrightness(s, CFstatus.ImageContrast, CFstatus.ImageBrightness);
-		
+
         s->set_saturation(s, CFstatus.ImageSaturation); // -2 to 2
 
         s->set_quality(s, CFstatus.ImageQuality); // 0 - 63
@@ -497,20 +497,20 @@ esp_err_t handler_json(httpd_req_t *req)
 }
 
 /**
- * Generates a http response containing the OpenMetrics (https://openmetrics.io/) text wire format 
+ * Generates a http response containing the OpenMetrics (https://openmetrics.io/) text wire format
  * according to https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#text-format.
- * 
+ *
  * A MetricFamily with a Metric for each Sequence is provided. If no valid value is available, the metric is not provided.
  * MetricPoints are provided without a timestamp. Additional metrics with some device information is also provided.
- * 
+ *
  * The metric name prefix is 'ai_on_the_edge_device_'.
- * 
+ *
  * example configuration for Prometheus (`prometheus.yml`):
- * 
+ *
  *    - job_name: watermeter
  *      static_configs:
  *        - targets: ['watermeter.fritz.box']
- * 
+ *
 */
 esp_err_t handler_openmetrics(httpd_req_t *req)
 {
@@ -531,16 +531,16 @@ esp_err_t handler_openmetrics(httpd_req_t *req)
         string response = createSequenceMetrics(metricNamePrefix, flowctrl.getNumbers());
 
         // CPU Temperature
-        response += createMetric(metricNamePrefix + "_cpu_temperature_celsius", "current cpu temperature in celsius", "gauge", std::to_string((int)temperatureRead())); 
+        response += createMetric(metricNamePrefix + "_cpu_temperature_celsius", "current cpu temperature in celsius", "gauge", std::to_string((int)temperatureRead()));
 
         // WiFi signal strength
-        response += createMetric(metricNamePrefix + "_rssi_dbm", "current WiFi signal strength in dBm", "gauge", std::to_string(get_WIFI_RSSI())); 
+        response += createMetric(metricNamePrefix + "_rssi_dbm", "current WiFi signal strength in dBm", "gauge", std::to_string(get_WIFI_RSSI()));
 
         // memory info
-        response += createMetric(metricNamePrefix + "_memory_heap_free_bytes", "available heap memory", "gauge", std::to_string(getESPHeapSize())); 
+        response += createMetric(metricNamePrefix + "_memory_heap_free_bytes", "available heap memory", "gauge", std::to_string(getESPHeapSize()));
 
         // device uptime
-        response += createMetric(metricNamePrefix + "_uptime_seconds", "device uptime in seconds", "gauge", std::to_string((long)getUpTime())); 
+        response += createMetric(metricNamePrefix + "_uptime_seconds", "device uptime in seconds", "gauge", std::to_string((long)getUpTime()));
 
         // data aquisition round
         response += createMetric(metricNamePrefix + "_rounds_total", "data aquisition rounds since device startup", "counter", std::to_string(countRounds));
@@ -748,7 +748,7 @@ esp_err_t handler_wasserzaehler(httpd_req_t *req)
                     std::stringstream stream;
                     stream << std::fixed << std::setprecision(1) << htmlinfoana[i]->val;
                     zw = stream.str();
-                    
+
                     // Numbers greater than 10 and less than 0 indicate NaN, since a Roi can only have values ​​from 0 to 9.
                     if ((std::stod(zw) >= 10) || (std::stod(zw) < 0))
                     {
@@ -992,22 +992,22 @@ esp_err_t handler_editflow(httpd_req_t *req)
                     switch (_aecgc_)
                     {
                         case 1:
-                            CFstatus.ImageGainceiling = GAINCEILING_4X; 
+                            CFstatus.ImageGainceiling = GAINCEILING_4X;
                             break;
                         case 2:
-                            CFstatus.ImageGainceiling = GAINCEILING_8X; 
+                            CFstatus.ImageGainceiling = GAINCEILING_8X;
                             break;
                         case 3:
-                            CFstatus.ImageGainceiling = GAINCEILING_16X; 
+                            CFstatus.ImageGainceiling = GAINCEILING_16X;
                             break;
                         case 4:
-                            CFstatus.ImageGainceiling = GAINCEILING_32X; 
+                            CFstatus.ImageGainceiling = GAINCEILING_32X;
                             break;
                         case 5:
-                            CFstatus.ImageGainceiling = GAINCEILING_64X; 
+                            CFstatus.ImageGainceiling = GAINCEILING_64X;
                             break;
                         case 6:
-                            CFstatus.ImageGainceiling = GAINCEILING_128X; 
+                            CFstatus.ImageGainceiling = GAINCEILING_128X;
                             break;
                         default:
                             CFstatus.ImageGainceiling = GAINCEILING_2X;
@@ -1640,6 +1640,65 @@ esp_err_t handler_prevalue(httpd_req_t *req)
     return ESP_OK;
 }
 
+esp_err_t handler_overview_json(httpd_req_t* req)
+{
+#ifdef DEBUG_DETAIL_ON
+    LogFile.WriteHeapInfo("handler_overview_json - Start");
+#endif
+
+    std::string json = "{";
+
+    // Get value, prevalue, raw, error data
+    std::string value_data = flowctrl.getReadoutAll(READOUT_TYPE_VALUE);
+    addJsonString(json, "value", value_data, true);
+
+    std::string prevalue_data = flowctrl.getReadoutAll(READOUT_TYPE_PREVALUE);
+    addJsonString(json, "prevalue", prevalue_data);
+
+    std::string raw_data = flowctrl.getReadoutAll(READOUT_TYPE_RAWVALUE);
+    addJsonString(json, "raw", raw_data);
+
+    std::string error_data = flowctrl.getReadoutAll(READOUT_TYPE_ERROR);
+    addJsonString(json, "error", error_data);
+
+    if (bTaskAutoFlowCreated)
+    {
+        std::string* statusflow = flowctrl.getActStatusWithTime();
+        addJsonString(json, "statusflow", *statusflow);
+    }
+    else
+    {
+        addJsonString(json, "statusflow", "Flow task not yet created");
+    }
+
+    std::string date = getCurrentTimeString("%Y-%m-%d %H:%M:%S");
+    addJsonString(json, "date", date);
+
+    int cputemp = (int)temperatureRead();
+    addJsonNumber(json, "cputemp", cputemp);
+
+    int rssi = get_WIFI_RSSI();
+    addJsonNumber(json, "rssi", rssi);
+
+    std::string uptime = getFormatedUptime(false);
+    addJsonString(json, "uptime", uptime);
+
+    int round = getCountFlowRounds();
+    addJsonNumber(json, "round", round);
+
+    json += "}";
+
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, json.c_str(), json.length());
+
+#ifdef DEBUG_DETAIL_ON
+    LogFile.WriteHeapInfo("handler_overview_json - Done");
+#endif
+
+    return ESP_OK;
+}
+
 void task_autodoFlow(void *pvParameter)
 {
     int64_t fr_start, fr_delta_ms;
@@ -1886,6 +1945,11 @@ void register_server_main_flow_task_uri(httpd_handle_t server)
     camuri.uri = "/metrics";
     camuri.handler = APPLY_BASIC_AUTH_FILTER(handler_openmetrics);
     camuri.user_ctx = (void *)"metrics";
+    httpd_register_uri_handler(server, &camuri);
+
+    camuri.uri = "/overview_json";
+    camuri.handler = APPLY_BASIC_AUTH_FILTER(handler_overview_json);
+    camuri.user_ctx = (void*)"OverviewData";
     httpd_register_uri_handler(server, &camuri);
 
     /** when adding a new handler, make sure to increment the value for config.max_uri_handlers in `main/server_main.cpp` */
