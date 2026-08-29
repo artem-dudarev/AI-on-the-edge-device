@@ -155,8 +155,11 @@
     <input class="button" type="button" id="startreference" value="Create New Reference / Change Camera Settings" onclick="doTakeReference()">
     <hr>
 
-    <input style="margin-top:12px; margin-bottom:12px; color:black" type="checkbox" id="ExpertModus_enabled" value="1"  onclick='UpdateExpertModus()' unchecked>
-    <label for="ExpertModus_enabled">Show Expert Parameters</label> 
+    <input style="margin-top:12px; margin-bottom:12px; color:black" type="checkbox" id="ExpertModus_enabled" value="1"  onclick='UpdateExpertModus()' checked>
+    <label for="ExpertModus_enabled">Show Expert Parameters</label>
+
+    <input style="margin-top:12px; margin-bottom:12px; margin-left:24px; color:black" type="checkbox" id="ShowGrid_enabled" value="1" onclick='drawRotated(true)'>
+    <label for="ShowGrid_enabled">Show Grid</label>
 
     <table style="width: 100%">
         <colgroup>
@@ -371,6 +374,97 @@
             </td>
 			<td>$TOOLTIP_TakeImage_CamSharpness</td>
         </tr>
+
+        <tr class="expert">
+			<td class="indent1">
+				<class id="TakeImage_CamAecValue_text" style="color:black;">Exposure Value: </class>
+			</td>
+			<td>
+				<input required type="number" id="TakeImage_CamAecValue_value1" size="13" value="600" min="0" max="1200" onchange="cameraParameterChanged()"
+					oninput="(!validity.rangeUnderflow||(value=0)) &amp;&amp; (!validity.rangeOverflow||(value=1200)) &amp;&amp; (!validity.stepMismatch||(value=parseInt(this.value)));">
+			</td>
+			<td>$TOOLTIP_TakeImage_CamAecValue</td>
+
+			<td class="indent1">
+				<class id="TakeImage_CamAgc_text" style="color:black;">Auto Gain</class>
+			</td>
+			<td>
+				<select id="TakeImage_CamAgc_value1" onchange="cameraParameterChanged()">
+					<option value="true">enabled (true)</option>
+					<option value="false" selected>disabled (false)</option>
+				</select>
+			</td>
+			<td>$TOOLTIP_TakeImage_CamAgc</td>
+        </tr>
+
+        <tr class="expert">
+			<td class="indent1">
+				<class id="TakeImage_CamAgcGain_text" style="color:black;">Gain Manual Value: </class>
+			</td>
+			<td>
+				<input required type="number" id="TakeImage_CamAgcGain_value1" size="13" value="0" min="0" max="30" onchange="cameraParameterChanged()"
+					oninput="(!validity.rangeUnderflow||(value=0)) &amp;&amp; (!validity.rangeOverflow||(value=30)) &amp;&amp; (!validity.stepMismatch||(value=parseInt(this.value)));">
+			</td>
+			<td>$TOOLTIP_TakeImage_CamAgcGain</td>
+
+			<td class="indent1">
+				<class id="TakeImage_CamAwb_text" style="color:black;">White Balance</class>
+			</td>
+			<td>
+				<select id="TakeImage_CamAwb_value1" onchange="cameraParameterChanged()">
+					<option value="true">enabled (true)</option>
+					<option value="false" selected>disabled (false)</option>
+				</select>
+			</td>
+			<td>$TOOLTIP_TakeImage_CamAwb</td>
+        </tr>
+
+        <tr class="expert">
+			<td class="indent1">
+				<class id="TakeImage_CamAwbGain_text" style="color:black;">Auto White Balance</class>
+			</td>
+			<td>
+				<select id="TakeImage_CamAwbGain_value1" onchange="cameraParameterChanged()">
+					<option value="true">enabled (true)</option>
+					<option value="false" selected>disabled (false)</option>
+				</select>
+			</td>
+			<td>$TOOLTIP_TakeImage_CamAwbGain</td>
+
+			<td class="indent1">
+				<class id="TakeImage_CamWbMode_text" style="color:black;">White Balance Mode</class>
+			</td>
+			<td>
+				<select id="TakeImage_CamWbMode_value1" onchange="cameraParameterChanged()">
+					<option value="auto" selected>auto</option>
+					<option value="sunny">sunny</option>
+					<option value="cloudy">cloudy</option>
+					<option value="office">office</option>
+					<option value="home">home</option>
+				</select>
+			</td>
+			<td>$TOOLTIP_TakeImage_CamWbMode</td>
+        </tr>
+
+        <tr class="expert">
+			<td class="indent1">
+				<class id="TakeImage_CamQuality_text" style="color:black;">Image Quality: </class>
+			</td>
+			<td>
+				<input required type="number" id="TakeImage_CamQuality_value1" size="13" value="10" min="5" max="63" onchange="cameraParameterChanged()"
+					oninput="(!validity.rangeUnderflow||(value=5)) &amp;&amp; (!validity.rangeOverflow||(value=63)) &amp;&amp; (!validity.stepMismatch||(value=parseInt(this.value)));">
+			</td>
+			<td>$TOOLTIP_TakeImage_CamQuality</td>
+
+			<td class="indent1">
+				<class id="TakeImage_CamDenoise_text" style="color:black;">Denoise: </class>
+			</td>
+			<td>
+				<input required type="number" id="TakeImage_CamDenoise_value1" size="13" value="0" min="0" max="8" step="1" onchange="cameraParameterChanged()"
+					oninput="(!validity.rangeUnderflow||(value=0)) &amp;&amp; (!validity.rangeOverflow||(value=8)) &amp;&amp; (!validity.stepMismatch||(value=parseInt(this.value)));">
+			</td>
+			<td>$TOOLTIP_TakeImage_CamDenoise</td>
+        </tr>
     </table>
 
     <table>
@@ -381,6 +475,10 @@
 			
             <td>
 				<input class="button" type="button" id="savereferenceimage" value="Save new Reference Image and Camera Settings" onclick="SaveReference()">
+			</td>
+
+            <td>
+				<input class="button" type="button" id="downloadreferenceimage" value="Download Image" onclick="DownloadReference()">
 			</td>
         </tr>	
     </table>
@@ -405,6 +503,8 @@
         function cameraParameterChanged() {
             document.getElementById("savereferenceimage").disabled = true;
 
+            updateManualExposureItems();
+
             if(!document.getElementById("TakeImage_CamZoom_value1").selectedIndex) {
 				// EnDisableItem(_status, _param, _category, _cat, _name, _optional, _number = -1)
 				EnDisableItem(true, param, category, "TakeImage", "CamZoomOffsetX", false);
@@ -423,6 +523,19 @@
             else {
 				EnDisableItem(true, param, category, "TakeImage", "CamSharpness", false);				
             }			
+        }
+
+        function updateManualExposureItems() {
+            var _aecOn = !document.getElementById("TakeImage_CamAec_value1").selectedIndex;
+            var _agcOn = !document.getElementById("TakeImage_CamAgc_value1").selectedIndex;
+            var _awbOn = !document.getElementById("TakeImage_CamAwb_value1").selectedIndex;
+            var _awbgOn = !document.getElementById("TakeImage_CamAwbGain_value1").selectedIndex;
+
+            EnDisableItem(_aecOn, param, category, "TakeImage", "CamAeLevel", false);
+            EnDisableItem(!_aecOn, param, category, "TakeImage", "CamAecValue", false);
+            EnDisableItem(!_agcOn, param, category, "TakeImage", "CamAgcGain", false);
+            EnDisableItem(_awbOn, param, category, "TakeImage", "CamAwbGain", false);
+            EnDisableItem(_awbOn && _awbgOn, param, category, "TakeImage", "CamWbMode", false);
         }
 
         function cameraParameterChangedDR() {
@@ -471,6 +584,14 @@
 			EnDisableItem(true, param, category, "TakeImage", "CamSpecialEffect", false);
 				
 			EnDisableItem(true, param, category, "TakeImage", "LEDIntensity", false);			
+
+			EnDisableItem(true, param, category, "TakeImage", "CamAgc", false);
+			EnDisableItem(true, param, category, "TakeImage", "CamAwb", false);
+			EnDisableItem(true, param, category, "TakeImage", "CamAwbGain", false);
+			EnDisableItem(true, param, category, "TakeImage", "CamQuality", false);
+			EnDisableItem(true, param, category, "TakeImage", "CamDenoise", false);
+
+			updateManualExposureItems();
 
             document.getElementById("ExpertModus_enabled").disabled = false;
 
@@ -544,6 +665,37 @@
             var _shp_temp = document.getElementById("TakeImage_CamSharpness_value1").value;
 
             var _ael_temp = document.getElementById("TakeImage_CamAeLevel_value1").value;
+
+            var _aecv_temp = document.getElementById("TakeImage_CamAecValue_value1").value;
+            var _agcg_temp = document.getElementById("TakeImage_CamAgcGain_value1").value;
+            var _qual_temp = document.getElementById("TakeImage_CamQuality_value1").value;
+            var _den_temp = document.getElementById("TakeImage_CamDenoise_value1").value;
+            var _wbm_temp = document.getElementById("TakeImage_CamWbMode_value1").selectedIndex;
+
+            var _agc_temp = document.getElementById("TakeImage_CamAgc_value1").selectedIndex;
+            if (_agc_temp == '0') {
+                _agc_temp = '1';
+            }
+            else {
+                _agc_temp = '0';
+            }
+
+            var _awb_temp = document.getElementById("TakeImage_CamAwb_value1").selectedIndex;
+            if (_awb_temp == '0') {
+                _awb_temp = '1';
+            }
+            else {
+                _awb_temp = '0';
+            }
+
+            var _awbg_temp = document.getElementById("TakeImage_CamAwbGain_value1").selectedIndex;
+            if (_awbg_temp == '0') {
+                _awbg_temp = '1';
+            }
+            else {
+                _awbg_temp = '0';
+            }
+
             var _effect_temp = document.getElementById("TakeImage_CamSpecialEffect_value1").selectedIndex;
 			
             var url = domainname + "/editflow?task=test_take";
@@ -563,7 +715,10 @@
             }		    
                     
             url = url + "&aec=" + _aec_temp + "&ael=" + _ael_temp + "&aec2=" + _aec2_temp;
-            url = url + "&mirror=" + _mirror_temp + "&flip=" + _flip_temp;			
+            url = url + "&mirror=" + _mirror_temp + "&flip=" + _flip_temp;
+            url = url + "&aecv=" + _aecv_temp + "&agc=" + _agc_temp + "&agcg=" + _agcg_temp;
+            url = url + "&awb=" + _awb_temp + "&awbg=" + _awbg_temp + "&wbm=" + _wbm_temp;
+            url = url + "&qual=" + _qual_temp + "&den=" + _den_temp;
 
             var durchlaufe = 0;
 
@@ -684,6 +839,37 @@
             var _shp_temp = document.getElementById("TakeImage_CamSharpness_value1").value;
 
             var _ael_temp = document.getElementById("TakeImage_CamAeLevel_value1").value;
+
+            var _aecv_temp = document.getElementById("TakeImage_CamAecValue_value1").value;
+            var _agcg_temp = document.getElementById("TakeImage_CamAgcGain_value1").value;
+            var _qual_temp = document.getElementById("TakeImage_CamQuality_value1").value;
+            var _den_temp = document.getElementById("TakeImage_CamDenoise_value1").value;
+            var _wbm_temp = document.getElementById("TakeImage_CamWbMode_value1").selectedIndex;
+
+            var _agc_temp = document.getElementById("TakeImage_CamAgc_value1").selectedIndex;
+            if (_agc_temp == '0') {
+                _agc_temp = '1';
+            }
+            else {
+                _agc_temp = '0';
+            }
+
+            var _awb_temp = document.getElementById("TakeImage_CamAwb_value1").selectedIndex;
+            if (_awb_temp == '0') {
+                _awb_temp = '1';
+            }
+            else {
+                _awb_temp = '0';
+            }
+
+            var _awbg_temp = document.getElementById("TakeImage_CamAwbGain_value1").selectedIndex;
+            if (_awbg_temp == '0') {
+                _awbg_temp = '1';
+            }
+            else {
+                _awbg_temp = '0';
+            }
+
             var _effect_temp = document.getElementById("TakeImage_CamSpecialEffect_value1").selectedIndex;
 
             var url = domainname + "/editflow?task=cam_settings";
@@ -703,7 +889,10 @@
             }		    
 
             url = url + "&aec=" + _aec_temp + "&ael=" + _ael_temp + "&aec2=" + _aec2_temp;
-            url = url + "&mirror=" + _mirror_temp + "&flip=" + _flip_temp;			
+            url = url + "&mirror=" + _mirror_temp + "&flip=" + _flip_temp;
+            url = url + "&aecv=" + _aecv_temp + "&agc=" + _agc_temp + "&agcg=" + _agcg_temp;
+            url = url + "&awb=" + _awb_temp + "&awbg=" + _awbg_temp + "&wbm=" + _wbm_temp;
+            url = url + "&qual=" + _qual_temp + "&den=" + _den_temp;
 
             var durchlaufe = 0;
 
@@ -757,8 +946,8 @@
 		
         function showReference(){
             url = domainname + "/fileserver/config/reference.jpg" + "?session=" + Math.floor((Math.random() * 1000000) + 1);		
-            loadCanvas(url, false);
-            isActReference = true;			
+            loadCanvas(url, true);
+            isActReference = true;
 		
             var _rotate_temp = param["Alignment"]["InitialRotate"].value1;
 
@@ -793,6 +982,15 @@
 			
 			WriteParameter(param, category, "TakeImage", "LEDIntensity", false);
 
+			WriteParameter(param, category, "TakeImage", "CamAecValue", false);
+			WriteParameter(param, category, "TakeImage", "CamAgc", false);
+			WriteParameter(param, category, "TakeImage", "CamAgcGain", false);
+			WriteParameter(param, category, "TakeImage", "CamAwb", false);
+			WriteParameter(param, category, "TakeImage", "CamAwbGain", false);
+			WriteParameter(param, category, "TakeImage", "CamWbMode", false);
+			WriteParameter(param, category, "TakeImage", "CamQuality", false);
+			WriteParameter(param, category, "TakeImage", "CamDenoise", false);
+
 			EnDisableItem(false, param, category, "TakeImage", "CamBrightness", false);
 			EnDisableItem(false, param, category, "TakeImage", "CamSaturation", false);
 			EnDisableItem(false, param, category, "TakeImage", "CamContrast", false);
@@ -813,7 +1011,16 @@
 				
 			EnDisableItem(false, param, category, "TakeImage", "CamSpecialEffect", false);
 				
-			EnDisableItem(false, param, category, "TakeImage", "LEDIntensity", false);			
+			EnDisableItem(false, param, category, "TakeImage", "LEDIntensity", false);
+
+			EnDisableItem(false, param, category, "TakeImage", "CamAecValue", false);
+			EnDisableItem(false, param, category, "TakeImage", "CamAgc", false);
+			EnDisableItem(false, param, category, "TakeImage", "CamAgcGain", false);
+			EnDisableItem(false, param, category, "TakeImage", "CamAwb", false);
+			EnDisableItem(false, param, category, "TakeImage", "CamAwbGain", false);
+			EnDisableItem(false, param, category, "TakeImage", "CamWbMode", false);
+			EnDisableItem(false, param, category, "TakeImage", "CamQuality", false);
+			EnDisableItem(false, param, category, "TakeImage", "CamDenoise", false);
 			
             document.getElementById("ExpertModus_enabled").disabled = true;
 			
@@ -854,6 +1061,15 @@
 			
 			ReadParameter(param, "TakeImage", "LEDIntensity", false);			
 
+			ReadParameter(param, "TakeImage", "CamAecValue", false);
+			ReadParameter(param, "TakeImage", "CamAgc", false);
+			ReadParameter(param, "TakeImage", "CamAgcGain", false);
+			ReadParameter(param, "TakeImage", "CamAwb", false);
+			ReadParameter(param, "TakeImage", "CamAwbGain", false);
+			ReadParameter(param, "TakeImage", "CamWbMode", false);
+			ReadParameter(param, "TakeImage", "CamQuality", false);
+			ReadParameter(param, "TakeImage", "CamDenoise", false);
+
             var canvas = document.getElementById("canvas");
             drawRotated(false);
 
@@ -879,7 +1095,8 @@
             param = getCamConfig();
 			category = getConfigCategory();
 			
-			canvas.addEventListener('mousemove', mouseMove, false);			
+			canvas.addEventListener('mousemove', mouseMove, false);
+			canvas.addEventListener('mouseleave', mouseLeave, false);
 
             UpdateExpertModus();
 			UpdateTooltipModus();
@@ -909,6 +1126,78 @@
             };
 
             imageObj.src = dataURL;
+        }
+
+        function DownloadReference() {
+            var xhttp = new XMLHttpRequest();
+
+            xhttp.open("GET", imageObj.src, true);
+            xhttp.responseType = "blob";
+
+            xhttp.onload = function() {
+                if (xhttp.status < 200 || xhttp.status >= 300) {
+                    firework.launch('Download failed: HTTP ' + xhttp.status, 'danger', 8000);
+                    return;
+                }
+
+                SaveBlobAsPng(xhttp.response);
+            };
+
+            xhttp.onerror = function() {
+                firework.launch('Download failed: request was blocked', 'danger', 8000);
+            };
+
+            xhttp.send();
+        }
+
+        function SaveBlobAsPng(_blob) {
+            var blobUrl = URL.createObjectURL(_blob);
+            var clean = new Image();
+
+            clean.onload = function() {
+                var work = document.createElement("canvas");
+
+                work.width = clean.width;
+                work.height = clean.height;
+
+                var context = work.getContext("2d");
+
+                if (isActReference) {
+                    context.drawImage(clean, 0, 0);
+                }
+                else {
+                    var degrees = Number(document.getElementById("PreRotateAngle_value1").value) +
+                        Number(document.getElementById("FineRotate_value1").value);
+
+                    context.translate(work.width / 2, work.height / 2);
+                    context.rotate(degrees * Math.PI / 180);
+                    context.drawImage(clean, -clean.width / 2, -clean.height / 2);
+                }
+
+                URL.revokeObjectURL(blobUrl);
+
+                var link = document.createElement("a");
+
+                link.href = work.toDataURL("image/png");
+                link.download = "reference_" + GetFileTimestamp() + ".png";
+
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            clean.src = blobUrl;
+        }
+
+        function GetFileTimestamp() {
+            var now = new Date();
+
+            var pad = function(_value) {
+                return ("0" + _value).slice(-2);
+            };
+
+            return now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + "-" +
+                pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
         }
 
         function SaveCanvasToImage(_canvas, _filename, _delete = true, _domainname = ""){
@@ -976,7 +1265,7 @@
             
             context.restore();
 
-            if (_grid) {
+            if (_grid && document.getElementById("ShowGrid_enabled").checked) {
                 drawGrid();
             }
         }
@@ -1011,17 +1300,24 @@
             context.restore();
         }
 
+        function mouseLeave() {
+            if (!document.getElementById("ShowGrid_enabled").checked) {
+                return;
+            }
+
+            drawRotated(true);
+        }
+
         function mouseMove(e) {
+            if (!document.getElementById("ShowGrid_enabled").checked) {
+                return;
+            }
+
             var canvas = document.getElementById('canvas');
-            var context = canvas.getContext('2d');            
-			
-            if (isActReference) {
-                drawRotated(false);
-            }
-            else {
-                drawRotated(true);
-            }
-            
+            var context = canvas.getContext('2d');
+
+            drawRotated(true);
+
             var zw = getCoords(this);
             var x = e.pageX - zw.left;
             var y = e.pageY - zw.top;
